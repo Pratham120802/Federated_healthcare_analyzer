@@ -1,0 +1,7 @@
+flwr
+torch
+numpy
+scikit-learn
+requests
+streamlit
+matplotlib
