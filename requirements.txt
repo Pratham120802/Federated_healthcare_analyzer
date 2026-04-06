@@ -5,3 +5,7 @@ scikit-learn
 requests
 streamlit
 matplotlib
+plotly
+pandas
+openpyxl
+pyarrow

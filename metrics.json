@@ -1,17 +1,42 @@
 [
   {
-    "accuracy": 0.6754385964912281
+    "round": 1,
+    "accuracy": 0.379084,
+    "loss": 1.430445,
+    "num_clients": 3,
+    "total_examples": 247372,
+    "timestamp": "2026-04-06T21:09:02.276841+00:00"
   },
   {
-    "accuracy": 0.8070175438596491
+    "round": 2,
+    "accuracy": 0.381439,
+    "loss": 1.395919,
+    "num_clients": 3,
+    "total_examples": 247372,
+    "timestamp": "2026-04-06T21:09:47.703135+00:00"
   },
   {
-    "accuracy": 0.8859649122807017
+    "round": 3,
+    "accuracy": 0.383994,
+    "loss": 1.391679,
+    "num_clients": 3,
+    "total_examples": 247372,
+    "timestamp": "2026-04-06T21:10:33.794848+00:00"
   },
   {
-    "accuracy": 0.9122807017543859
+    "round": 4,
+    "accuracy": 0.385158,
+    "loss": 1.363321,
+    "num_clients": 3,
+    "total_examples": 247372,
+    "timestamp": "2026-04-06T21:11:19.468430+00:00"
   },
   {
-    "accuracy": 0.9210526315789473
+    "round": 5,
+    "accuracy": 0.384845,
+    "loss": 1.355933,
+    "num_clients": 3,
+    "total_examples": 247372,
+    "timestamp": "2026-04-06T21:12:03.738729+00:00"
   }
 ]

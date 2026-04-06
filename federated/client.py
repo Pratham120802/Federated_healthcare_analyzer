@@ -1,5 +1,9 @@
 import sys
 from collections import OrderedDict
+from pathlib import Path
+
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(_PROJECT_ROOT))
 
 import flwr as fl
 import torch
@@ -7,11 +11,18 @@ import torch.nn as nn
 import torch.optim as optim
 
 from model.model import HealthcareModel
+from federated.data_loader import dataset_exists, get_dataset_summary
 from federated.utils import load_partition
 
 
 if len(sys.argv) < 2:
     raise ValueError("Usage: python federated/client.py <client_id>")
+
+if not dataset_exists():
+    raise FileNotFoundError(
+        "No dataset found! Please upload a CSV dataset through the dashboard first.\n"
+        "Run: python -m streamlit run dashboard/app.py"
+    )
 
 client_id = int(sys.argv[1])
 num_clients = 3
@@ -19,7 +30,10 @@ num_clients = 3
 train_data, train_labels, test_data, test_labels = load_partition(client_id, num_clients)
 input_size = train_data.shape[1]
 
-model = HealthcareModel(input_size)
+ds_summary = get_dataset_summary()
+num_classes = ds_summary["n_classes"]
+
+model = HealthcareModel(input_size, num_classes=num_classes)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
