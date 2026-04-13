@@ -1,5 +1,4 @@
 flwr
-torch
 numpy
 scikit-learn
 requests
@@ -9,3 +8,4 @@ plotly
 pandas
 openpyxl
 pyarrow
+xgboost

@@ -209,29 +209,43 @@ def _preprocess_features(df: pd.DataFrame, feature_cols: list[str]) -> Tuple[pd.
     X_df = X_df.dropna(axis=1, how='all')
     
     # Drop columns with single unique value (no information)
+    cols_to_drop = []
     for col in X_df.columns.tolist():
         if X_df[col].nunique() <= 1:
-            X_df = X_df.drop(columns=[col])
+            cols_to_drop.append(col)
+    X_df = X_df.drop(columns=cols_to_drop)
     
     # Drop columns with too many unique values relative to rows (likely IDs)
     n_rows = len(X_df)
+    cols_to_drop = []
     for col in X_df.columns.tolist():
         if X_df[col].dtype == 'object':
             unique_ratio = X_df[col].nunique() / n_rows
             if unique_ratio > 0.9:  # 90% unique = probably an ID
-                X_df = X_df.drop(columns=[col])
+                cols_to_drop.append(col)
+    X_df = X_df.drop(columns=cols_to_drop)
     
-    # Process remaining columns
-    for col in X_df.columns:
-        if X_df[col].dtype == 'object' or X_df[col].dtype.name == 'category':
-            # Categorical: fill NaN and encode
-            X_df[col] = X_df[col].fillna('_MISSING_')
+    # Process remaining columns - encode ALL to numeric
+    for col in X_df.columns.tolist():
+        # Check if column is actually numeric
+        is_numeric = pd.api.types.is_numeric_dtype(X_df[col])
+        
+        if not is_numeric or X_df[col].dtype == 'object' or X_df[col].dtype.name == 'category':
+            # Categorical/string: fill NaN and encode
+            X_df[col] = X_df[col].fillna('_MISSING_').astype(str)
             le = LabelEncoder()
-            X_df[col] = le.fit_transform(X_df[col].astype(str))
+            X_df[col] = le.fit_transform(X_df[col])
         else:
-            # Numeric: fill NaN with median (more robust than mean)
+            # Numeric: fill NaN with median
             if X_df[col].isna().any():
-                X_df[col] = X_df[col].fillna(X_df[col].median())
+                median_val = X_df[col].median()
+                if pd.isna(median_val):
+                    median_val = 0
+                X_df[col] = X_df[col].fillna(median_val)
+    
+    # Ensure all columns are numeric
+    for col in X_df.columns:
+        X_df[col] = pd.to_numeric(X_df[col], errors='coerce').fillna(0)
     
     return X_df, X_df.columns.tolist()
 
