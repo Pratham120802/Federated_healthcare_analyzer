@@ -9,3 +9,7 @@ pandas
 openpyxl
 pyarrow
 xgboost
+lightgbm
+httpx
+python-dotenv
+pyjwt[crypto]

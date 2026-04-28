@@ -38,6 +38,49 @@ def _run_metrics_only(
     return " ".join(lines)
 
 
+def _multi_model_metrics_summary(
+    model_comparison: dict, 
+    num_rounds: int,
+    dataset_info: dict | None = None
+) -> str:
+    """Build a comprehensive multi-model metrics summary with dataset context."""
+    lines = []
+    
+    # Add dataset/disease context first
+    if dataset_info:
+        target = dataset_info.get("target_column", "Unknown")
+        dataset_name = dataset_info.get("dataset_name", "Healthcare Dataset")
+        n_samples = dataset_info.get("n_samples", 0)
+        class_names = dataset_info.get("class_names", [])
+        
+        lines.append(f"HEALTHCARE PREDICTION TASK:")
+        lines.append(f"- Dataset: {dataset_name}")
+        lines.append(f"- Predicting: {target}")
+        lines.append(f"- Total patients/samples: {n_samples}")
+        if class_names:
+            lines.append(f"- Outcome classes: {', '.join(str(c) for c in class_names)}")
+        lines.append("")
+    
+    lines.append(f"FEDERATED LEARNING RESULTS ({num_rounds} rounds, 3 models):")
+    
+    models = ["xgboost", "random_forest", "lightgbm"]
+    model_names = {"xgboost": "XGBoost", "random_forest": "Random Forest", "lightgbm": "LightGBM"}
+    
+    for key in models:
+        if key in model_comparison:
+            data = model_comparison[key]
+            acc = data.get("final_accuracy", 0) * 100
+            loss = data.get("final_loss", 0)
+            lines.append(f"- {model_names[key]}: {acc:.2f}% accuracy, {loss:.4f} loss")
+    
+    best_key = model_comparison.get("best_model", "xgboost")
+    best_name = model_names.get(best_key, "XGBoost")
+    best_acc = model_comparison.get(best_key, {}).get("final_accuracy", 0) * 100
+    lines.append(f"\nBest performing model: {best_name} with {best_acc:.2f}% accuracy.")
+    
+    return "\n".join(lines)
+
+
 def build_initial_clinical_messages(
     accuracy: float,
     loss: float,
@@ -55,6 +98,60 @@ def build_initial_clinical_messages(
         {"role": "system", "content": _clinical_system_prompt()},
         {"role": "user", "content": " ".join(parts)},
     ]
+
+
+def build_multimodel_clinical_messages(
+    model_comparison: dict,
+    num_rounds: int = 0,
+    *,
+    data_context: str | None = None,
+    dataset_info: dict | None = None,
+) -> list[dict[str, str]]:
+    """Build initial messages for multi-model comparison chat."""
+    parts = [_multi_model_metrics_summary(model_comparison, num_rounds, dataset_info)]
+    
+    if data_context:
+        parts.append(f"\nAdditional dataset details:\n{data_context.strip()}")
+    
+    # Build disease-specific prompt
+    target_name = dataset_info.get("target_column", "the condition") if dataset_info else "the condition"
+    
+    parts.append(
+        f"\nProvide a clinical analysis covering: "
+        f"1) What this model is predicting (explain '{target_name}' in clinical terms), "
+        f"2) Brief comparison of all 3 models' performance for this prediction task, "
+        f"3) Why the best model likely performed better for this specific healthcare data, "
+        f"4) One clinical recommendation for using this model in practice. "
+        f"Keep response to 5-7 sentences."
+    )
+    return [
+        {"role": "system", "content": _clinical_system_prompt()},
+        {"role": "user", "content": "\n".join(parts)},
+    ]
+
+
+def generate_multimodel_insight_with_history(
+    model_comparison: dict,
+    num_rounds: int = 0,
+    *,
+    data_context: str | None = None,
+    dataset_info: dict | None = None,
+) -> tuple[list[dict[str, str]] | None, str | None]:
+    """
+    Generate insight for multi-model comparison and return full message history.
+    Returns (messages_with_assistant_reply, error).
+    """
+    messages = build_multimodel_clinical_messages(
+        model_comparison, num_rounds, data_context=data_context, dataset_info=dataset_info
+    )
+    content, err = ollama_chat(messages, max_tokens=400)
+    if err:
+        return None, err
+    if not content:
+        return None, "Empty response from LLM."
+    out = list(messages)
+    out.append({"role": "assistant", "content": content})
+    return out, None
 
 
 def ollama_chat(
